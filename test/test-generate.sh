@@ -25,7 +25,7 @@ assert_contains() {
 
 assert_contains "doctype"            "<!DOCTYPE html>"
 assert_contains "charset"            'charset="utf-8"'
-assert_contains "viewport"           "viewport"
+assert_contains "viewport"           'content="width=device-width, initial-scale=1"'
 assert_contains "title"              "edward3h"
 assert_contains "dark background"    "#0d1117"
 assert_contains "profile link"       "https://github.com/edward3h"
