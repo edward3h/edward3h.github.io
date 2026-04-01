@@ -12,10 +12,10 @@ render_html() {
   local cards
   cards=$(jq -r '
     .[] |
-    "<a class=\"card\" href=\"" + .pages_url + "\">" +
-    "<div class=\"card-name\">" + .name + "</div>" +
-    "<div class=\"card-desc\">" + (if .description == null or .description == "" then "No description provided." else .description end) + "</div>" +
-    "<div class=\"card-url\">" + (.pages_url | ltrimstr("https://")) + "</div>" +
+    "<a class=\"card\" href=\"" + (.pages_url | @html) + "\">" +
+    "<div class=\"card-name\">" + (.name | @html) + "</div>" +
+    "<div class=\"card-desc\">" + (if .description == null or .description == "" then "No description provided." else (.description | @html) end) + "</div>" +
+    "<div class=\"card-url\">" + ((.pages_url | ltrimstr("https://")) | @html) + "</div>" +
     "</a>"
   ' "$repos_file")
 
@@ -132,14 +132,17 @@ fetch_pages_repos() {
   stderr_out=$(mktemp)
 
   # Fetch all public repos
+  local stderr_content=""
   if ! repos_json=$(gh api --paginate --jq '.[]' "/users/${owner}/repos" 2>"$stderr_out"); then
-    check_rate_limit "$(cat "$stderr_out")"
+    stderr_content=$(cat "$stderr_out")
     rm -f "$stderr_out"
+    check_rate_limit "$stderr_content"
     echo "Error: failed to list repositories." >&2
     exit 1
   fi
-  check_rate_limit "$(cat "$stderr_out")"
+  stderr_content=$(cat "$stderr_out")
   rm -f "$stderr_out"
+  check_rate_limit "$stderr_content"
 
   # Filter out the user site repo and check Pages for each remaining repo
   local result="[]"
@@ -158,8 +161,10 @@ fetch_pages_repos() {
     pages_stderr=$(mktemp)
 
     if pages_out=$(gh api "/repos/${owner}/${name}/pages" 2>"$pages_stderr"); then
-      check_rate_limit "$(cat "$pages_stderr")"
+      local pages_ok_content=""
+      pages_ok_content=$(cat "$pages_stderr")
       rm -f "$pages_stderr"
+      check_rate_limit "$pages_ok_content"
 
       # Use html_url from Pages API, fall back to constructed URL
       local pages_url
@@ -195,6 +200,7 @@ if [[ "${1:-}" != "--source-only" ]]; then
   OWNER="edward3h"
   SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
   TMP_REPOS=$(mktemp)
+  trap 'rm -f "${TMP_REPOS:-}"' EXIT
 
   fetch_pages_repos "$OWNER" "$TMP_REPOS"
   render_html "$TMP_REPOS" > "$SCRIPT_DIR/index.html"

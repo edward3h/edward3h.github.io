@@ -26,7 +26,7 @@ assert_contains() {
 assert_contains "doctype"            "<!DOCTYPE html>"
 assert_contains "charset"            'charset="utf-8"'
 assert_contains "viewport"           'content="width=device-width, initial-scale=1"'
-assert_contains "title"              "edward3h"
+assert_contains "title"              "<title>edward3h"
 assert_contains "dark background"    "#0d1117"
 assert_contains "profile link"       "https://github.com/edward3h"
 assert_contains "repo name"          "my-site"
@@ -35,5 +35,24 @@ assert_contains "repo url"           "edward3h.github.io/my-site"
 assert_contains "another repo name"  "another-project"
 assert_contains "null description fallback" "No description provided."
 assert_contains "pages link"         "https://edward3h.github.io/another-project"
+
+# Empty-state test: empty array should show "No projects yet." with no cards
+empty_fixture=$(mktemp)
+echo '[]' > "$empty_fixture"
+empty_output=$(render_html "$empty_fixture")
+rm -f "$empty_fixture"
+
+if echo "$empty_output" | grep -qF "No projects yet."; then
+  echo "PASS: empty state message"
+else
+  echo "FAIL: empty state message — expected to find: No projects yet."
+  fail=1
+fi
+if echo "$empty_output" | grep -qF 'class="card"'; then
+  echo "FAIL: empty state has unexpected cards"
+  fail=1
+else
+  echo "PASS: empty state has no cards"
+fi
 
 exit $fail
