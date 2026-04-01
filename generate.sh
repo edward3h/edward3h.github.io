@@ -128,17 +128,18 @@ fetch_pages_repos() {
   local owner="$1"
   local out_file="$2"
 
-  local repos_json stderr_out
+  local repos_json stderr_out=""
   stderr_out=$(mktemp)
-  trap 'rm -f "$stderr_out"' EXIT
 
   # Fetch all public repos
   if ! repos_json=$(gh api --paginate --jq '.[]' "/users/${owner}/repos" 2>"$stderr_out"); then
     check_rate_limit "$(cat "$stderr_out")"
+    rm -f "$stderr_out"
     echo "Error: failed to list repositories." >&2
     exit 1
   fi
   check_rate_limit "$(cat "$stderr_out")"
+  rm -f "$stderr_out"
 
   # Filter out the user site repo and check Pages for each remaining repo
   local result="[]"
@@ -153,12 +154,12 @@ fetch_pages_repos() {
     fi
 
     # Check if Pages is enabled
-    local pages_stderr pages_out
+    local pages_stderr="" pages_out
     pages_stderr=$(mktemp)
-    trap 'rm -f "$stderr_out" "$pages_stderr"' EXIT
 
     if pages_out=$(gh api "/repos/${owner}/${name}/pages" 2>"$pages_stderr"); then
       check_rate_limit "$(cat "$pages_stderr")"
+      rm -f "$pages_stderr"
 
       # Use html_url from Pages API, fall back to constructed URL
       local pages_url
@@ -175,6 +176,7 @@ fetch_pages_repos() {
     else
       local pages_err
       pages_err=$(cat "$pages_stderr")
+      rm -f "$pages_stderr"
       check_rate_limit "$pages_err"
 
       # 404 = no Pages, any other error = warn and skip
