@@ -1,12 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# When sourced for testing, skip the main execution
-if [[ "${1:-}" == "--source-only" ]]; then
-  # Only define functions, do not run
-  :
-fi
-
 # ── HTML generation ──────────────────────────────────────────────────────────
 
 # render_html <repos-json-file>
